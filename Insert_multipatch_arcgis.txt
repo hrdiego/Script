@@ -1,0 +1,151 @@
+import arcpy
+import os
+
+gdb_path = r"D:\BIM_CRN\6_ModeloFederado\CNJ_CRN_RPS_BIM_ARCGIS\PAQUETE_MO2.gdb"
+feature_dataset_name = "CONSTRUCCION"
+output_folder = r"D:\BIM_CRN\6_ModeloFederado\DOCUMENTACION"
+output_file = os.path.join(output_folder, f"conteo_{feature_dataset_name}.txt")
+
+arcpy.env.workspace = os.path.join(gdb_path, feature_dataset_name)
+
+feature_classes = arcpy.ListFeatureClasses()
+
+with open(output_file, 'w') as f:
+    for fc in feature_classes:
+        fc_path = os.path.join(gdb_path, feature_dataset_name, fc)
+        count = int(arcpy.GetCount_management(fc_path).getOutput(0))
+        f.write(f"{fc}: {count}\n")
+        print(f"{fc}: {count}")
+
+print(f"Conteos guardados en: {output_file}")
+===============================================================================================
+===============================================================================================
+import arcpy
+import os
+
+# Habilitar sobreescritura de salidas
+arcpy.env.overwriteOutput = True
+
+# Carpeta con DWG
+input_folder = r"D:\BIM_CRN\6_ModeloFederado\OTROS\CAD\AVANCE"
+
+# GDB de destino y Feature Dataset
+output_gdb = r"D:\BIM_CRN\6_ModeloFederado\CNJ_CRN_RPS_BIM_ARCGIS\PAQUETE_MO2.gdb"
+feature_dataset = "CONSTRUCCION"
+
+# Recorre todos los archivos DWG
+for file in os.listdir(input_folder):
+    if file.lower().endswith(".dwg"):
+        dwg_path = os.path.join(input_folder, file)
+        dwg_name = os.path.splitext(file)[0]
+        multipatch_layer = os.path.join(dwg_path, "Multipatch")
+        output_fc_path = os.path.join(output_gdb, feature_dataset, dwg_name)
+
+        if arcpy.Exists(multipatch_layer):
+            # Verifica si ya existe el FC destino
+            if arcpy.Exists(output_fc_path):
+                try:
+                    arcpy.Delete_management(output_fc_path)
+                    print(f"⚠️ Eliminado Feature Class previo: {dwg_name}")
+                except Exception as e:
+                    print(f"❌ No se pudo eliminar '{dwg_name}', puede estar bloqueado.")
+                    print(str(e))
+                    continue
+
+            # Ejecutar la conversión
+            try:
+                arcpy.conversion.FeatureClassToFeatureClass(
+                    in_features=multipatch_layer,
+                    out_path=os.path.join(output_gdb, feature_dataset),
+                    out_name=dwg_name
+                )
+                print(f"✅ Multipatch copiado: {dwg_name}")
+            except Exception as e:
+                print(f"❌ Error al copiar {dwg_name}:")
+                print(str(e))
+        else:
+            print(f"ℹ️ No se encontró capa Multipatch en: {file}")
+
+===============================================================================================
+===============================================================================================
+import arcpy
+import os
+
+
+input_folder = r"D:\BIM_CRN\6_ModeloFederado\OTROS\CAD\PROYECTADO\INTEGRAL_PROGRAMADO"
+output_gdb = r"D:\BIM_CRN\6_ModeloFederado\CNJ_CRN_RPS_BIM_ARCGIS\PAQUETE_MO2.gdb"
+feature_dataset = "PLANEAMIENTO"
+
+arcpy.env.overwriteOutput = True
+
+
+arcpy.env.workspace = input_folder
+
+dwg_files = arcpy.ListFiles("*.dwg")
+
+for dwg in dwg_files:
+    dwg_path = os.path.join(input_folder, dwg)
+    arcpy.env.workspace = dwg_path
+
+    for fc in arcpy.ListFeatureClasses(feature_type="Multipatch"):
+        nombre_base = f"{os.path.splitext(dwg)[0]}_{fc}"
+        destino = os.path.join(output_gdb, feature_dataset, nombre_base)
+
+        print(f"Copiando {fc} de {dwg} a {destino}")
+        arcpy.FeatureClassToFeatureClass_conversion(
+            in_features=fc,
+            out_path=os.path.join(output_gdb, feature_dataset),
+            out_name=nombre_base
+        )
+
+print("Proceso completado.")
+===============================================================================================
+===============================================================================================
+import arcpy
+import os
+# Insercion de NEV's
+# Habilitar sobreescritura de salidas
+arcpy.env.overwriteOutput = True
+
+# Carpeta con DWG
+input_folder = r"D:\BIM_CRN\6_ModeloFederado\OTROS\CAD\AVANCE"
+
+# GDB de destino y Feature Dataset
+output_gdb = r"D:\BIM_CRN\6_ModeloFederado\CNJ_CRN_RPS_BIM_ARCGIS\PAQUETE_MO2.gdb"
+feature_dataset = "MATRIZ_DE_CAMBIOS"
+
+procesados = 0
+saltados = 0
+
+# Recorre todos los archivos DWG
+for file in os.listdir(input_folder):
+    if file.lower().endswith(".dwg"):
+        dwg_path = os.path.join(input_folder, file)
+        dwg_name = os.path.splitext(file)[0]
+        multipatch_layer = os.path.join(dwg_path, "Multipatch")
+        output_fc_path = os.path.join(output_gdb, feature_dataset, dwg_name)
+
+        if arcpy.Exists(multipatch_layer):
+            # Eliminar si ya existe
+            if arcpy.Exists(output_fc_path):
+                try:
+                    arcpy.Delete_management(output_fc_path)
+                except:
+                    saltados += 1
+                    continue
+
+            # Ejecutar la conversión
+            try:
+                arcpy.conversion.FeatureClassToFeatureClass(
+                    in_features=multipatch_layer,
+                    out_path=os.path.join(output_gdb, feature_dataset),
+                    out_name=dwg_name
+                )
+                procesados += 1
+            except:
+                saltados += 1
+        else:
+            saltados += 1
+
+print(f"\n✅ Proceso finalizado. {procesados} archivos procesados correctamente, {saltados} archivos saltados o con error.")
+
