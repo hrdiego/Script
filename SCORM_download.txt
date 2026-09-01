@@ -8,7 +8,7 @@
         "/courses/1/CIIN.1403P.226534.7138.P/content/_66082166_1/",
         location.origin
     ).href;
-//ss
+    
 	// cambiar el nombre del archivo, siempre en .zip
     const ZIP_NAME = "SCORM_Tema_03_Tecnologia_Materiales.zip";
 
